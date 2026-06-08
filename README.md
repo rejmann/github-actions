@@ -9,6 +9,7 @@ Este repositório centraliza workflows reutilizáveis para uso em outros projeto
 
 ## Workflows disponíveis
 
+- `Ping` ([docs/workflows/ping.md](docs/workflows/ping.md))
 - `Resolve Version Tag` ([docs/workflows/version-tag.md](docs/workflows/version-tag.md))
 
 ## Como usar
@@ -24,6 +25,7 @@ jobs:
 ## Saídas dos workflows
 
 Cada workflow documenta suas saídas em `docs/workflows`.
+No caso de `ping.yaml`, não há saídas.
 No caso de `version-tag.yml`, a saída principal é:
 
 - `version`: tag resolvida/criada (exemplo: `v1.0.1`).
