@@ -1,0 +1,82 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version embedded in the binary; also the git ref checked out when set (e.g. v1.0.2).
+        type: string
+        required: false
+        default: ""
+      platform:
+        description: "Target platform: all, linux, darwin, or windows"
+        type: string
+        required: false
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          LINUX='[{"goos":"linux","goarch":"amd64","bin":"pvm","archive_ext":".tar.gz"},{"goos":"linux","goarch":"arm64","bin":"pvm","archive_ext":".tar.gz"}]'
+          DARWIN='[{"goos":"darwin","goarch":"amd64","bin":"pvm","archive_ext":".tar.gz"},{"goos":"darwin","goarch":"arm64","bin":"pvm","archive_ext":".tar.gz"}]'
+          WINDOWS='[{"goos":"windows","goarch":"amd64","bin":"pvm.exe","archive_ext":".zip"}]'
+
+          case "${{ inputs.platform }}" in
+            linux) MATRIX="{\"include\":$LINUX}" ;;
+            darwin) MATRIX="{\"include\":$DARWIN}" ;;
+            windows) MATRIX="{\"include\":$WINDOWS}" ;;
+            *) MATRIX="{\"include\":[$LINUX,$DARWIN,$WINDOWS]}" ;;
+          esac
+
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  build:
+    needs: prepare-matrix
+    name: Build ${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ inputs.version || 'dev' }}
+        run: |
+          set -euo pipefail
+
+          OUT_DIR=dist/${{ matrix.goos }}-${{ matrix.goarch }}
+          BIN=${{ matrix.bin }}
+          mkdir -p "${OUT_DIR}"
+
+          go build -ldflags "-s -w -X main.version=${VERSION}" \
+            -o "${OUT_DIR}/${BIN}" .
+
+          cd "${OUT_DIR}"
+
+          PACK_CMD=$([ "${{ matrix.goos }}" = "windows" ] && echo "zip -9" || echo "tar -czf")
+          ${PACK_CMD} "../pvm-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.archive_ext }}" "${BIN}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pvm-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/pvm-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.archive_ext }}
