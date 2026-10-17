@@ -13,6 +13,16 @@ on:
         type: string
         required: false
         default: all
+      name:
+        description: Binary and artifact name (e.g. pvm, ponto).
+        type: string
+        required: false
+        default: pvm
+      package:
+        description: Go package to build, relative to the repo root (e.g. ., ./cmd/ponto).
+        type: string
+        required: false
+        default: .
 
 permissions:
   contents: read
@@ -25,9 +35,9 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          LINUX='[{"goos":"linux","goarch":"amd64","bin":"pvm","archive_ext":".tar.gz"},{"goos":"linux","goarch":"arm64","bin":"pvm","archive_ext":".tar.gz"}]'
-          DARWIN='[{"goos":"darwin","goarch":"amd64","bin":"pvm","archive_ext":".tar.gz"},{"goos":"darwin","goarch":"arm64","bin":"pvm","archive_ext":".tar.gz"}]'
-          WINDOWS='[{"goos":"windows","goarch":"amd64","bin":"pvm.exe","archive_ext":".zip"}]'
+          LINUX='[{"goos":"linux","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"linux","goarch":"arm64","archive_ext":".tar.gz"}]'
+          DARWIN='[{"goos":"darwin","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"darwin","goarch":"arm64","archive_ext":".tar.gz"}]'
+          WINDOWS='[{"goos":"windows","goarch":"amd64","archive_ext":".zip"}]'
 
           case "${{ inputs.platform }}" in
             linux) MATRIX="{\"include\":$LINUX}" ;;
@@ -60,23 +70,28 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           VERSION: ${{ inputs.version || 'dev' }}
+          NAME: ${{ inputs.name }}
+          PACKAGE: ${{ inputs.package }}
         run: |
           set -euo pipefail
 
-          OUT_DIR=dist/${{ matrix.goos }}-${{ matrix.goarch }}
-          BIN=${{ matrix.bin }}
+          OUT_DIR=dist/${GOOS}-${GOARCH}
+          BIN=${NAME}
+          if [ "${GOOS}" = "windows" ]; then
+            BIN="${NAME}.exe"
+          fi
           mkdir -p "${OUT_DIR}"
 
           go build -ldflags "-s -w -X main.version=${VERSION}" \
-            -o "${OUT_DIR}/${BIN}" .
+            -o "${OUT_DIR}/${BIN}" "${PACKAGE}"
 
           cd "${OUT_DIR}"
 
-          PACK_CMD=$([ "${{ matrix.goos }}" = "windows" ] && echo "zip -9" || echo "tar -czf")
-          ${PACK_CMD} "../pvm-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.archive_ext }}" "${BIN}"
+          PACK_CMD=$([ "${GOOS}" = "windows" ] && echo "zip -9" || echo "tar -czf")
+          ${PACK_CMD} "../${NAME}-${GOOS}-${GOARCH}${{ matrix.archive_ext }}" "${BIN}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pvm-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/pvm-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.archive_ext }}
+          name: ${{ inputs.name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/${{ inputs.name }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.archive_ext }}

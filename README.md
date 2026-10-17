@@ -31,7 +31,7 @@ No caso de `version-tag.yml`, a saída principal é:
 
 - `version`: tag resolvida/criada (exemplo: `v1.0.1`).
 
-No caso de `golang-build.yml`, não há outputs; os binários são publicados como artifacts `pvm-<goos>-<goarch>`.
+No caso de `golang-build.yml`, não há outputs; os binários são publicados como artifacts `<name>-<goos>-<goarch>` (padrão `pvm`).
 
 ## Observações
 
