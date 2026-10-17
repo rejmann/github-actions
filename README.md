@@ -9,6 +9,7 @@ Este repositório centraliza workflows reutilizáveis para uso em outros projeto
 
 ## Workflows disponíveis
 
+- `Build` ([docs/workflows/golang-build.md](docs/workflows/golang-build.md))
 - `Ping` ([docs/workflows/ping.md](docs/workflows/ping.md))
 - `Resolve Version Tag` ([docs/workflows/version-tag.md](docs/workflows/version-tag.md))
 
@@ -29,6 +30,8 @@ No caso de `ping.yaml`, não há saídas.
 No caso de `version-tag.yml`, a saída principal é:
 
 - `version`: tag resolvida/criada (exemplo: `v1.0.1`).
+
+No caso de `golang-build.yml`, não há outputs; os binários são publicados como artifacts `pvm-<goos>-<goarch>`.
 
 ## Observações
 
