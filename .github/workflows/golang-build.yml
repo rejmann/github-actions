@@ -34,18 +34,25 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
+        env:
+          PLATFORM: ${{ inputs.platform }}
         run: |
-          LINUX='[{"goos":"linux","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"linux","goarch":"arm64","archive_ext":".tar.gz"}]'
-          DARWIN='[{"goos":"darwin","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"darwin","goarch":"arm64","archive_ext":".tar.gz"}]'
-          WINDOWS='[{"goos":"windows","goarch":"amd64","archive_ext":".zip"}]'
+          set -euo pipefail
 
-          case "${{ inputs.platform }}" in
-            linux) MATRIX="{\"include\":$LINUX}" ;;
-            darwin) MATRIX="{\"include\":$DARWIN}" ;;
-            windows) MATRIX="{\"include\":$WINDOWS}" ;;
-            *) MATRIX="{\"include\":[$LINUX,$DARWIN,$WINDOWS]}" ;;
+          # Itens sem colchetes, para poderem ser concatenados no caso "all".
+          LINUX='{"goos":"linux","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"linux","goarch":"arm64","archive_ext":".tar.gz"}'
+          DARWIN='{"goos":"darwin","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"darwin","goarch":"arm64","archive_ext":".tar.gz"}'
+          WINDOWS='{"goos":"windows","goarch":"amd64","archive_ext":".zip"}'
+
+          case "${PLATFORM}" in
+            linux) ITEMS="$LINUX" ;;
+            darwin) ITEMS="$DARWIN" ;;
+            windows) ITEMS="$WINDOWS" ;;
+            all) ITEMS="$LINUX,$DARWIN,$WINDOWS" ;;
+            *) echo "::error::platform invalida: ${PLATFORM} (use all, linux, darwin ou windows)"; exit 1 ;;
           esac
 
+          MATRIX="{\"include\":[${ITEMS}]}"
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
   build:
