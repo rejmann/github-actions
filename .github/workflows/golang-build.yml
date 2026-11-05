@@ -9,7 +9,7 @@ on:
         required: false
         default: ""
       platform:
-        description: "Target platform: all, linux, darwin, or windows"
+        description: "Target platforms: all, or a comma-separated list of linux, darwin, windows (e.g. linux,windows)"
         type: string
         required: false
         default: all
@@ -39,18 +39,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Itens sem colchetes, para poderem ser concatenados no caso "all".
+          # Itens sem colchetes, para poderem ser concatenados.
           LINUX='{"goos":"linux","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"linux","goarch":"arm64","archive_ext":".tar.gz"}'
           DARWIN='{"goos":"darwin","goarch":"amd64","archive_ext":".tar.gz"},{"goos":"darwin","goarch":"arm64","archive_ext":".tar.gz"}'
           WINDOWS='{"goos":"windows","goarch":"amd64","archive_ext":".zip"}'
 
-          case "${PLATFORM}" in
-            linux) ITEMS="$LINUX" ;;
-            darwin) ITEMS="$DARWIN" ;;
-            windows) ITEMS="$WINDOWS" ;;
-            all) ITEMS="$LINUX,$DARWIN,$WINDOWS" ;;
-            *) echo "::error::platform invalida: ${PLATFORM} (use all, linux, darwin ou windows)"; exit 1 ;;
-          esac
+          [ "${PLATFORM}" = "all" ] && PLATFORM="linux,darwin,windows"
+
+          ITEMS=""
+          IFS=',' read -ra PLATFORMS <<< "${PLATFORM}"
+          for p in "${PLATFORMS[@]}"; do
+            p="$(echo "$p" | tr -d '[:space:]')"
+            case "$p" in
+              linux) ITEM="$LINUX" ;;
+              darwin) ITEM="$DARWIN" ;;
+              windows) ITEM="$WINDOWS" ;;
+              *) echo "::error::platform invalida: '$p' (use all ou uma lista de linux, darwin, windows)"; exit 1 ;;
+            esac
+            ITEMS="${ITEMS:+$ITEMS,}$ITEM"
+          done
 
           MATRIX="{\"include\":[${ITEMS}]}"
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
