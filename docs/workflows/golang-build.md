@@ -25,7 +25,7 @@ Workflow reutilizável via `workflow_call`.
 | Nome       | Tipo   | Obrigatório | Padrão | Descrição |
 |------------|--------|-------------|--------|-----------|
 | `version`  | string | não         | `""`   | Versão embutida no binário (`main.version`). Quando informada, também é o ref usado no checkout (ex.: `v1.0.2`). Se vazia, o binário recebe `dev`. |
-| `platform` | string | não         | `all`  | Plataforma alvo: `all`, `linux`, `darwin` ou `windows`. Qualquer valor não reconhecido é tratado como `all`. |
+| `platform` | string | não         | `all`  | Plataformas alvo: `all` ou uma lista separada por vírgula de `linux`, `darwin` e `windows` (ex.: `linux,windows`). Valores não reconhecidos fazem o job falhar. |
 | `name`     | string | não         | `pvm`  | Nome do binário e dos artifacts (no Windows recebe `.exe`). |
 | `package`  | string | não         | `.`    | Pacote Go a compilar, relativo à raiz do repositório (ex.: `./cmd/ponto`). |
 
